@@ -27,13 +27,16 @@
 #define BFE_INVALIDBLOCK            -22
 #define BFE_CANNOTDESTROYFILE		-23
 
-
 /* H metavlhth opou kataxwreitai o kwdikos tou teleftaiou sfalmatos */
 int BF_Errno;
 
 /* Kathorizei to mege8os enos block apo to arxeio  */
 #define BLOCK_SIZE 512
 
+// Added to link with  g++ 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Arxikopoiei tin eswterikh plhroforia tin opoia krataei to epipedo block arxeiwn (BF) */
 void BF_Init();
@@ -138,5 +141,9 @@ int BF_WriteBlock(const int fileDesc, const int blockNumber);
 */
 void BF_PrintError(const char* message);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BF_H_ */
+
