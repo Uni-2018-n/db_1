@@ -29,7 +29,7 @@ void WriteRecord(void* block, int recordNumber, const Record* record);
 void* InitBlock(HP_info* header_info, int blockNumber);
 int IsBlockEmpty(int file_desc);
 void ReplaceWithLastRecord(int pos, void* block);
-void* InitBlock(HP_info& header_info, int blockNumber);
+int InitBlock(HP_info* header_info, int blockNumber, void** block);
 int IsKeyInBlock(Record* record, void* block);
 int AssignKeyToRecord(Record* record, void* value, char key_type);
 
