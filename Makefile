@@ -3,4 +3,4 @@ CPPFLAGS := -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
 		                -Wredundant-decls -Winline \
 							-Wuninitialized -O0 -g
 myprog: main.cpp HP.cpp HP.h
-	g++ ${CPPFLAGS} main.cpp HP.cpp -L. -static -l:BF_64.a -o myprog
+	g++ ${CPPFLAGS} main.cpp HP.cpp BF_64.a -no-pie -o myprog
