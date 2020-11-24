@@ -20,5 +20,20 @@ int HP_CloseFile(HP_info* header_info);
 int HP_InsertEntry(HP_info header_info, Record record);
 int HP_DeleteEntry(HP_info header_info, void *value);
 int HP_GetAllEntries(HP_info header_info, void *value);
+int ReadNumOfRecords(void *block);
+void WriteNumOfRecords(void* block, int recordNumber);
+int ReadNextBlockAddr(void* block);
+void WriteNextBlockAddr(void* block, int blockNumber);
+void ReadRecord(void* block, int recordNumber, Record* record);
+void WriteRecord(void* block, int recordNumber, const Record* record);
+void* InitBlock(HP_info* header_info, int blockNumber);
+int IsBlockEmpty(int file_desc);
+void ReplaceWithLastRecord(int pos, void* block);
+void* InitBlock(HP_info& header_info, int blockNumber);
+int IsKeyInBlock(Record* record, void* block);
+int AssignKeyToRecord(Record* record, void* value, char key_type);
+
+// TODO: Remove this.
+void PrintAllEntries(HP_info header_info);
 
 #endif // __HP_H__
