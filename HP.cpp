@@ -8,7 +8,7 @@ const int MAX_RECORDS_IN_BLOCK = (BLOCK_SIZE - sizeof(HP_info)) / sizeof(Record)
 
 int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int attrLength)
 {
-	// Don't do anything if name bigger than the limit.
+	// Don't do anything if name greater than the limit.
 	if (strlen(attrName) > MAX_ATTR_NAME_SIZE - 1)
 		return 1;
 
@@ -165,75 +165,75 @@ int HP_InsertEntry(HP_info header_info, Record record)
 	if (num_of_blocks < 0)
 		return -1;
 
-	void* block = nullptr;
-
-	int curr_block_addr = 1; // 1 cause we don't need to read the header.
-	int available_block_addr = -1; // a block with space to add a record.
-
+	int should_init_block = 0;
 	// Only the header.
 	if (num_of_blocks == 1)
 	{
-		int error = InitBlock(&header_info, 1, &block);
-		if (error != 0)
-			return error;
-
-		num_of_blocks++;
-
-		// We just created the block, so we don't need to read it, again.
-		// Also there's no needto check if the key is already inside the block.
-		goto skip_reading_file_cause_it_is_the_first;
+		num_of_blocks = 2; // We will create the second block later.
+		should_init_block = 1;
 	}
-		
-	while (true)
-	{
-		if (BF_ReadBlock(header_info.fileDesc, curr_block_addr, &block) != 0)
-			return -1;
 
+	void* block = nullptr;
+
+	int available_block_addr = -1; // a block with space to add a record.
+	int curr_block_addr = 1; // 1 cause we don't need to read the header.
+
+	// Loop until you have read all the blocks.
+	for (;;curr_block_addr++)
+	{
+		if (should_init_block == 0)
+		{
+			if (BF_ReadBlock(header_info.fileDesc, curr_block_addr, &block) != 0)
+				return 1;
+		}
+		
+		else 
+		{
+			// Create a block and initialize some values.
+			if (InitBlock(&header_info, curr_block_addr, &block) == -1)
+				return -1;
+
+			should_init_block = 0;
+		}
+			
 		if (IsKeyInBlock(&record, block) > -1)
 			return -1;
 
-		skip_reading_file_cause_it_is_the_first:
-
 		int num_of_records = ReadNumOfRecords(block);
-		// If we haven't space for a next block.
-		if (num_of_records + 1 >= MAX_RECORDS_IN_BLOCK)
+
+		// If we haven't enough space for another record.
+		if (num_of_records + 1 > MAX_RECORDS_IN_BLOCK)
 		{
-			curr_block_addr++;
 			int next_block_addr = ReadNextBlockAddr(block);
-			// There isn't a next block.
-			if (next_block_addr == -1)
+
+			// If there isn't a next block and we haven't found an available address for a record.
+			if (next_block_addr == -1 && available_block_addr == -1)
 			{
-				available_block_addr = curr_block_addr;
-				InitBlock(&header_info, curr_block_addr, &block);
+				WriteNextBlockAddr(block, curr_block_addr + 1);
+				BF_WriteBlock(header_info.fileDesc, curr_block_addr);
 
-				// We already know this, no need to read it.
-				num_of_records = 0;
+				should_init_block = 1;
 
-				// We just created the block, so we don't need to read it, again.
-				goto skip_reading_block_cause_it_is_new;
+				num_of_blocks++;
 			}
-
-			// We don't have space and there's a next block, so we continue.
-			else 
-				continue;
 		}
 
-		// If we haven't found an available block to store the entry.
+		// If we have space to store the block and haven't assigned one yet.
 		else if (available_block_addr == -1)
-		{
 			available_block_addr = curr_block_addr;
-		}
 
-		// If we have reached the last block and we haven't found the key.
+		// If we have reached the last block.
 		if (curr_block_addr == num_of_blocks - 1)
 		{
-			if (BF_ReadBlock(header_info.fileDesc, available_block_addr, &block) != 0)
-				return -1;
-
-			skip_reading_block_cause_it_is_new:
+			// Only read when necessary.
+			if (curr_block_addr != available_block_addr)
+			{
+				if (BF_ReadBlock(header_info.fileDesc, available_block_addr, &block) != 0)
+					return -1;
+			}
 
 			WriteRecord(block, num_of_records, &record);
-			WriteNumOfRecords(block, ++num_of_records);
+			WriteNumOfRecords(block, num_of_records + 1);
 
 			if (BF_WriteBlock(header_info.fileDesc, available_block_addr) != 0)
 				return -1;	
@@ -245,7 +245,6 @@ int HP_InsertEntry(HP_info header_info, Record record)
 	return available_block_addr;
 }
 
-// !Maybe I should use (int)*value.
 int AssignKeyToRecord(Record* record, void* value, char key_type)
 {
 	switch (key_type)
@@ -271,7 +270,7 @@ void ReplaceWithLastRecord(int pos, void* block)
 	int num_of_records = ReadNumOfRecords(block);	
 
 	// Last record, no need to do anything.
-	if (num_of_records == pos - 1)
+	if (pos == num_of_records - 1)
 		return;
 
 	Record record;
@@ -285,19 +284,19 @@ int HP_DeleteEntry(HP_info header_info, void *value)
 		return -1;
 
 	void* block;
-	int curr_block_addr;
 	Record record;
+	if (AssignKeyToRecord(&record, value, header_info.attrType) != 0)
+		return 1;
 
-	for (;;curr_block_addr++)
+	int num_of_blocks = BF_GetBlockCounter(header_info.fileDesc);
+
+	for (int curr_block_addr = 1; curr_block_addr < num_of_blocks; curr_block_addr++)
 	{
 		if (BF_ReadBlock(header_info.fileDesc, curr_block_addr, &block) != 0)
 			return -1;
 
-		if (AssignKeyToRecord(&record, value, header_info.attrType) != 0)
-			return 1;
-
 		int pos = IsKeyInBlock(&record, block);
-		if (pos >= -1)
+		if (pos > -1)
 		{
 			ReplaceWithLastRecord(pos, block);
 
@@ -377,6 +376,7 @@ void PrintAllEntries(HP_info header_info)
 					  << "\nname: " << record.name
 					  << "\nsurname: " << record.surname
 					  << "\naddress: " << record.address
+					  << "\nnum_of_records: " << num_of_records
 					  << std::endl << std::endl;
 		}
 	}

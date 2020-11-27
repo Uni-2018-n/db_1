@@ -3,7 +3,7 @@
 
 #include "Record.h"
 
-#define MAX_ATTR_NAME_SIZE 30
+#define MAX_ATTR_NAME_SIZE 15
 
 struct HP_info
 {
