@@ -1,9 +1,6 @@
-CPPFLAGS := -Wall -Wextra -pedantic -Wshadow -Wpointer-arith -Wcast-align \
-	            -Wwrite-strings -Wmissing-declarations \
-		                -Wredundant-decls -Winline \
-							-Wuninitialized -O0 -g
-myprog: main.cpp HP.cpp HP.h HT.cpp HT.h Makefile
-	g++ ${CPPFLAGS} main.cpp HP.cpp HT.cpp BF_64.a -no-pie -o main
+CPPFLAGS := -Wall -O0 -g
+myprog: main.cpp HT.cpp HT.h Makefile
+	g++ ${CPPFLAGS} main.cpp HT.cpp -L. -static -l:BF_64.a -o myprog
 
 clean :
 	rm -rf myprog

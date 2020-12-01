@@ -3,15 +3,19 @@
 
 #include "Record.h"
 
+#include "HP.h"
+
+
 typedef struct {
   int fileDesc;
+  char ht[3];
   char attrType;
-  char* attrName;
+  char attrName[MAX_ATTR_NAME_SIZE];
   int attrLength;
   long int numBuckets;
 } HT_info;
 
-int HT_CreateIndex(char *fileName, char attrType, char* attrName, int attrLength,int buckets);
+int HT_CreateIndex(const char *fileName, const char attrType, const char* attrName, const int attrLength, const int buckets);
 
 HT_info* HT_OpenIndex(char *fileName);
 
