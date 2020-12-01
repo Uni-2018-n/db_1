@@ -1,7 +1,6 @@
 #include "HT.h"
 
 #include "BF.h"
-
 #include <cstring>
 #include <iostream>
 
@@ -60,7 +59,6 @@ HT_info* HT_OpenIndex(char *fileName){
   memcpy(&(temp->attrName), (char *)block + 3+1, MAX_ATTR_NAME_SIZE);
   memcpy(&(temp->attrLength), (char *)block + 3+1 + MAX_ATTR_NAME_SIZE, sizeof(int));
   memcpy(&(temp->numBuckets), (char *)block + 3 + 1 + MAX_ATTR_NAME_SIZE + sizeof(int), sizeof(long int));
-
   return temp;
 }
 
@@ -71,6 +69,30 @@ int HT_CloseIndex(HT_info* header_info){
 }
 
 int HT_InsertEntry(HT_info header_info, Record record){
+  int h = record.id % header_info.numBuckets;
+
+  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
+  void* block;
+  BF_ReadBlock(header_info.fileDesc, 0, &block);
+
+  char* ht = new char[3];
+  memcpy(ht, (char *)block, 3);
+  if(strcmp(ht, "HT") != 0){
+    printf("Error block\n");
+    return -1;
+  }
+  block = (char*)block + startup;
+  int heap;
+  for(int i=0; i<header_info.numBuckets; i++){
+    if(i==h){
+      memcpy(&heap, (char*)block, sizeof(int));
+      break;
+    }else{
+      block = (char *)block + sizeof(int);
+    }
+  }
+  // heap_instert_to_block(heap, record) //opoy heap einai to heap id(oti epistrefei to BF_OpenFile sthn HP_Openfile->fileDesc)
+  BF_WriteBlock(header_info.fileDesc, 0);
   return 0;
 }
 
