@@ -19,7 +19,7 @@ int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int
 		return error;
 
 	int fd = BF_OpenFile(fileName);
-	if (fd < 0) 
+	if (fd < 0)
 		return fd;
 
 	error = BF_AllocateBlock(fd);
@@ -35,7 +35,7 @@ int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int
 	memcpy((char *)block, "HP", 3);
 	memcpy((char *)block + 3, &attrType, sizeof(char));
 	memcpy((char *)block + 3 + sizeof(char), attrName, strlen(attrName) + 1);
-	memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE , &attrLength, sizeof(int));	
+	memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE , &attrLength, sizeof(int));
 
 	error = BF_WriteBlock(fd, 0);
 		if (error != 0)
@@ -72,7 +72,7 @@ HP_info* HP_OpenFile(const char *fileName)
 
 	memcpy(&(header_info->attrType), (char *)block + 3, sizeof(char));
 	memcpy(header_info->attrName, ((char *)block) + 3 + sizeof(char), MAX_ATTR_NAME_SIZE);
-	memcpy(&(header_info->attrLength) , (char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE, sizeof(int));	
+	memcpy(&(header_info->attrLength) , (char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE, sizeof(int));
 
 	return header_info;
 }
@@ -93,13 +93,13 @@ int ReadNumOfRecords(void* block)
 	int num_of_records;
 
 	memcpy(&num_of_records, (char *)block + BLOCK_SIZE - sizeof(int) * 2, sizeof(int));
-	
+
 	return num_of_records;
 }
 
 void WriteNumOfRecords(void* block, int recordNumber)
 {
-	memcpy((char *)block + BLOCK_SIZE - sizeof(int) * 2, &recordNumber, sizeof(int)); 
+	memcpy((char *)block + BLOCK_SIZE - sizeof(int) * 2, &recordNumber, sizeof(int));
 }
 
 int ReadNextBlockAddr(void* block)
@@ -113,17 +113,17 @@ int ReadNextBlockAddr(void* block)
 
 void WriteNextBlockAddr(void* block, int blockAddrNumber)
 {
-	memcpy((char *)block + BLOCK_SIZE - sizeof(int), &blockAddrNumber, sizeof(int)); 
+	memcpy((char *)block + BLOCK_SIZE - sizeof(int), &blockAddrNumber, sizeof(int));
 }
 
 void ReadRecord(void* block, int recordNumber, Record* record)
 {
-	memcpy(record, (char *)block + recordNumber * sizeof(Record), sizeof(Record));	
+	memcpy(record, (char *)block + recordNumber * sizeof(Record), sizeof(Record));
 }
 
 void WriteRecord(void* block, int recordNumber, const Record* record)
 {
-	memcpy((char *)block + recordNumber * sizeof(Record), record, sizeof(Record));	
+	memcpy((char *)block + recordNumber * sizeof(Record), record, sizeof(Record));
 }
 
 int InitBlock(HP_info* header_info, int blockNumber, void** block)
@@ -186,8 +186,8 @@ int HP_InsertEntry(HP_info header_info, Record record)
 			if (BF_ReadBlock(header_info.fileDesc, curr_block_addr, &block) != 0)
 				return 1;
 		}
-		
-		else 
+
+		else
 		{
 			// Create a block and initialize some values.
 			if (InitBlock(&header_info, curr_block_addr, &block) == -1)
@@ -195,7 +195,7 @@ int HP_InsertEntry(HP_info header_info, Record record)
 
 			should_init_block = 0;
 		}
-			
+
 		if (IsKeyInBlock(&record, block) > -1)
 			return -1;
 
@@ -236,7 +236,7 @@ int HP_InsertEntry(HP_info header_info, Record record)
 			WriteNumOfRecords(block, num_of_records + 1);
 
 			if (BF_WriteBlock(header_info.fileDesc, available_block_addr) != 0)
-				return -1;	
+				return -1;
 
 			break;
 		}
@@ -267,7 +267,7 @@ int IsBlockEmpty(int file_desc)
 
 void ReplaceWithLastRecord(int pos, void* block)
 {
-	int num_of_records = ReadNumOfRecords(block);	
+	int num_of_records = ReadNumOfRecords(block);
 
 	// Last record, no need to do anything.
 	if (pos == num_of_records - 1)
@@ -304,7 +304,7 @@ int HP_DeleteEntry(HP_info header_info, void *value)
 			WriteNumOfRecords(block, ReadNumOfRecords(block) - 1);
 
 			BF_WriteBlock(header_info.fileDesc, curr_block_addr);
-			
+
 			return 0;
 		}
 	}
