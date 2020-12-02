@@ -70,8 +70,8 @@ int HT_CloseIndex(HT_info* header_info){
 }
 
 int HT_InsertEntry(HT_info header_info, Record record){
+  printf("inserting: %d ", record.id);
   int h = HT_function(&record.id, header_info.numBuckets);
-
   int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
   void* block;
   BF_ReadBlock(header_info.fileDesc, 0, &block);
@@ -90,11 +90,13 @@ int HT_InsertEntry(HT_info header_info, Record record){
     return -1;
 
   // printf("new_heap_addr: %d\n", new_heap_addr);
-
+  printf("%d ", record.id);
   if (new_heap_addr != heap){
     memcpy((char*)block+startup+sizeof(int)*i, &new_heap_addr, sizeof(int));
     BF_WriteBlock(header_info.fileDesc, 0);
   }
+  printf("%d ", record.id);
+
 
   // this tests if hash_table's addresses is working (check if something changes from 0)
   // for(i=0;i<header_info.numBuckets; i++){
