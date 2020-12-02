@@ -2,9 +2,7 @@
 #define __HT_H__
 
 #include "Record.h"
-
 #include "HP.h"
-
 
 typedef struct {
   int fileDesc;
@@ -30,4 +28,9 @@ int HT_GetAllEntries( HT_info header_info, void *value);
 int HT_function(int* value, int buckets);
 
 int HT_function(char* value, int buckets);
+
+int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap);
+int HT_HP_DeleteEntry(HT_info* header_info, void* value, int heap_address);
+int HT_HP_GetAllEntries(HT_info* header_info, void* value, int heap_addr);
+
 #endif

@@ -1,9 +1,9 @@
 #include "HP.h"
+#include "BF.h"
 
 #include <cstring>
 #include <iostream>
 
-#include "BF.h"
 #define MAX_RECORDS_IN_BLOCK ((BLOCK_SIZE - 2 * (int) sizeof(int)) / (int) sizeof(Record))
 
 int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int attrLength)
@@ -333,7 +333,7 @@ int HP_GetAllEntries(HP_info header_info, void* value)
 			return -1;
 
 		if (AssignKeyToRecord(&record, value, header_info.attrType) != 0)
-			return 1;
+			return -1;
 
 		int record_pos = IsKeyInBlock(&record, block);
 		if (record_pos > -1)
@@ -350,7 +350,6 @@ int HP_GetAllEntries(HP_info header_info, void* value)
 		}
 	}
 
-	// Key wasn't found.
 	return -1;
 }
 
