@@ -1,10 +1,7 @@
 #include "HP.h"
-#include "BF.h"
 
 #include <cstring>
 #include <iostream>
-
-const int MAX_RECORDS_IN_BLOCK = (BLOCK_SIZE - sizeof(HP_info)) / sizeof(Record);
 
 int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int attrLength)
 {
@@ -65,9 +62,10 @@ HP_info* HP_OpenFile(const char *fileName)
 	if (error != 0)
 		return nullptr;
 
-	memcpy(&(header_info->type), (char *)block, 3);
+	char type[3];
+	memcpy(type, (char *)block, 3);
 	// Check if the file type is compatible.
-	if (strcmp(header_info->type, "HP") != 0)
+	if (strcmp(type, "HP") != 0)
 		return nullptr;
 
 	memcpy(&(header_info->attrType), (char *)block + 3, sizeof(char));
