@@ -127,13 +127,17 @@ void WriteRecord(void* block, int recordNumber, const Record* record)
 	memcpy((char *)block + recordNumber * sizeof(Record), record, sizeof(Record));
 }
 
-int InitBlock(HP_info* header_info, int blockNumber, void** block)
+int InitBlock(int fileDesc, void** block)
 {
-	int error = BF_AllocateBlock(header_info->fileDesc);
+	int error = BF_AllocateBlock(fileDesc);
 	if (error != 0)
 		return error;
 
-	BF_ReadBlock(header_info->fileDesc, blockNumber, block);
+	int new_block_addr = BF_GetBlockCounter(fileDesc) - 1;
+	if (new_block_addr < 0)
+		return new_block_addr;
+
+	BF_ReadBlock(fileDesc, new_block_addr, block);
 	if (error != 0)
 		return error;
 
@@ -191,7 +195,7 @@ int HP_InsertEntry(HP_info header_info, Record record)
 		else
 		{
 			// Create a block and initialize some values.
-			if (InitBlock(&header_info, curr_block_addr, &block) == -1)
+			if (InitBlock(header_info.fileDesc, &block) == -1)
 				return -1;
 
 			should_init_block = 0;
