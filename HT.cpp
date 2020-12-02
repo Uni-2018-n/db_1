@@ -1,9 +1,7 @@
 #include "HT.h"
-
 #include "BF.h"
 #include <cstring>
 #include <iostream>
-
 #define MAX_RECORDS_IN_BLOCK ((BLOCK_SIZE - 2 * (int) sizeof(int)) / (int) sizeof(Record))
 
 int HT_CreateIndex(const char *fileName, const char attrType, const char* attrName, const int attrLength, const int buckets){
@@ -61,6 +59,7 @@ HT_info* HT_OpenIndex(char *fileName){
   memcpy(&(temp->attrName), (char *)block + 3+1, MAX_ATTR_NAME_SIZE);
   memcpy(&(temp->attrLength), (char *)block + 3+1 + MAX_ATTR_NAME_SIZE, sizeof(int));
   memcpy(&(temp->numBuckets), (char *)block + 3 + 1 + MAX_ATTR_NAME_SIZE + sizeof(int), sizeof(long int));
+
   return temp;
 }
 
@@ -77,41 +76,31 @@ int HT_InsertEntry(HT_info header_info, Record record){
   void* block;
   BF_ReadBlock(header_info.fileDesc, 0, &block);
 
-  // No reason to check if it is HT or not.
-  // You already did it when you opened the file.
-  char* ht = new char[3];
-  memcpy(ht, (char *)block, 3);
-  if(strcmp(ht, "HT") != 0){
-    printf("Error block\n");
-    return -1;
-  }
-  block = (char*)block + startup;
   int heap;
-  for(int i=0; i<header_info.numBuckets; i++){
+  int i;
+  for(i=0;i<header_info.numBuckets; i++){
     if(i==h){
-      memcpy(&heap, (char*)block, sizeof(int));
-      break;
-    }else{
-      block = (char *)block + sizeof(int);
+        memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
+        break;
     }
   }
 
-  // heap_instert_to_block(heap, record) //TODO: opoy heap einai to heap id(oti epistrefei to BF_OpenFile sthn HP_Openfile->fileDesc)
-  // I assume that heap equals 0 if there isn't a heap yet and the address of the heap if the is.
-  // I return the address of the first element. 
-  // If it is different than then one you had before, you should write the block.
-  // No need to write if you don't need to.
+  int new_heap_addr = HT_HP_InsertEntry(&header_info, &record, heap);
+  if (new_heap_addr == -1)
+    return -1;
 
-  // Uncomment this. And delete the BF_Write_Block at the end.
-  // int new_heap_addr = HT_HP_InsertEntry(&header_info, &record, heap);
-  // if (new_heap_addr == -1)
-  //   return -1;
-  
-  // if (new_heap_addr != heap)
-  //   BF_WriteBlock(header_info.fileDesc, 0);
+  // printf("new_heap_addr: %d\n", new_heap_addr);
 
-  BF_WriteBlock(header_info.fileDesc, 0);
+  if (new_heap_addr != heap){
+    memcpy((char*)block+startup+sizeof(int)*i, &new_heap_addr, sizeof(int));
+    BF_WriteBlock(header_info.fileDesc, 0);
+  }
 
+  // this tests if hash_table's addresses is working (check if something changes from 0)
+  // for(i=0;i<header_info.numBuckets; i++){
+  //       memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
+  //       printf("hash table: %d\n", heap);
+  // }
   return 0;
 }
 
@@ -127,40 +116,45 @@ int HT_DeleteEntry(HT_info header_info, void *value){
   int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
   void* block;
   BF_ReadBlock(header_info.fileDesc, 0, &block);
-  char* ht = new char[3];
-  memcpy(ht, (char *)block, 3);
-  if(strcmp(ht, "HT") != 0){
-    printf("Error block\n");
-    return -1;
-  }
-  block = (char*)block +startup;
+
   int heap;
-  for(int i=0;i<header_info.numBuckets;i++){
+  int i;
+  for(i=0;i<header_info.numBuckets; i++){
     if(i==h){
-      memcpy(&heap, (char *)block, sizeof(int));
-      break;
-    }else{
-      block = (char *)block + sizeof(int);
+        memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
+        break;
     }
   }
-  //heap_delete_entry(heap_number, id) //TODO: mporw na dosw to heap number kai mono to id oxi olo to record...
-  // I assume again that heap equals 0 if there isn't a heap yet and the address of the heap if the is.
-  // I return 0 if the deletion was successful and -1 if the key wasn't found or there was an error.
-  // Uncomment this to use it.
-  // if (HT_HP_DeleteEntry(&header_info, value, heap) != 0)
-  //   return -1;
+
+  if (HT_HP_DeleteEntry(&header_info, value, heap) != 0){
+    return -1;
+  }
 
   return 0;
 }
 
-int HT_GetAllEntries( HT_info header_info, void *value){
-  // Do stuff.
+int HT_GetAllEntries(HT_info header_info, void *value){
+  int h;
+  if(header_info.attrType == 'i'){
+    h = HT_function((int*)value, (int)header_info.numBuckets);
+  }else{
+    h = HT_function((char*)value, (int)header_info.numBuckets);
+  }
 
-  // I assume again that heap equals 0 if there isn't a heap yet and the address of the heap if the is.
-  // I return the number of blocks that we had to read if successfull, -1 if not.
-  // Uncomment this to use it. You can remove the last return 0; You can remove the last return 0.
-  // return HT_HP_GetAllEntries(&header_info, value, heap);
-  return 0;
+  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
+  void* block;
+  BF_ReadBlock(header_info.fileDesc, 0, &block);
+
+  int heap;
+  int i;
+  for(i=0;i<header_info.numBuckets; i++){
+    if(i==h){
+        memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
+        break;
+    }
+  }
+
+  return HT_HP_GetAllEntries(&header_info, value, heap);
 }
 
 int HT_function(int* value, int buckets){
@@ -281,7 +275,7 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 			// Create a block and initialize some values.
 			if (InitBlock(header_info->fileDesc, &block) == -1)
 				return -1;
-      
+
 			should_init_block = 0;
 		}
 
@@ -334,4 +328,132 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 	}
 
 	return heap_address;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int ReadNumOfRecords(void* block)
+{
+	int num_of_records;
+
+	memcpy(&num_of_records, (char *)block + BLOCK_SIZE - sizeof(int) * 2, sizeof(int));
+
+	return num_of_records;
+}
+
+void WriteNumOfRecords(void* block, int recordNumber)
+{
+	memcpy((char *)block + BLOCK_SIZE - sizeof(int) * 2, &recordNumber, sizeof(int));
+}
+
+int ReadNextBlockAddr(void* block)
+{
+	int next_block_addr;
+
+	memcpy(&next_block_addr, (char *)block + BLOCK_SIZE - sizeof(int), sizeof(int));
+
+	return next_block_addr;
+}
+
+void WriteNextBlockAddr(void* block, int blockAddrNumber)
+{
+	memcpy((char *)block + BLOCK_SIZE - sizeof(int), &blockAddrNumber, sizeof(int));
+}
+
+void ReadRecord(void* block, int recordNumber, Record* record)
+{
+	memcpy(record, (char *)block + recordNumber * sizeof(Record), sizeof(Record));
+}
+
+void WriteRecord(void* block, int recordNumber, const Record* record)
+{
+	memcpy((char *)block + recordNumber * sizeof(Record), record, sizeof(Record));
+}
+
+int InitBlock(int fileDesc, void** block)
+{
+	int error = BF_AllocateBlock(fileDesc);
+	if (error != 0)
+		return error;
+
+	int new_block_addr = BF_GetBlockCounter(fileDesc) - 1;
+	if (new_block_addr < 0)
+		return new_block_addr;
+
+	BF_ReadBlock(fileDesc, new_block_addr, block);
+	if (error != 0)
+		return error;
+
+	WriteNumOfRecords(*block, 0);
+	WriteNextBlockAddr(*block, -1);
+
+	return 0;
+}
+
+int IsKeyInBlock(Record* record, void* block)
+{
+	int num_of_records = ReadNumOfRecords(block);
+
+	Record tmp_record;
+
+	for (int i = 0; i < num_of_records; i++)
+	{
+		ReadRecord(block, i, &tmp_record);
+
+		if (record->id == tmp_record.id)
+			return i;
+	}
+
+	return -1;
+}
+
+int AssignKeyToRecord(Record* record, void* value, char key_type)
+{
+	switch (key_type)
+	{
+	case 'i':
+		record->id = *(int *)value;
+		return 0;
+	case 'c':
+		record->id = *(char *)value;
+		return 0;
+	default:
+		return 1;
+	}
+}
+
+int IsBlockEmpty(int file_desc)
+{
+	return BF_GetBlockCounter(file_desc) < 1;
+}
+
+void ReplaceWithLastRecord(int pos, void* block)
+{
+	int num_of_records = ReadNumOfRecords(block);
+
+	// Last record, no need to do anything.
+	if (pos == num_of_records - 1)
+		return;
+
+	Record record;
+	ReadRecord(block, num_of_records - 1, &record);
+	WriteRecord(block, pos, &record);
 }
