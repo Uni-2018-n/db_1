@@ -2,10 +2,8 @@
 #define __HP_H__
 
 #include "Record.h"
-#include "BF.h"
 
 #define MAX_ATTR_NAME_SIZE 15
-#define MAX_RECORDS_IN_BLOCK ((BLOCK_SIZE - 2 * (sizeof(int))) / sizeof(Record));
 
 struct HP_info
 {

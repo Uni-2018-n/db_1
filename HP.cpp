@@ -3,6 +3,9 @@
 #include <cstring>
 #include <iostream>
 
+#include "BF.h"
+#define MAX_RECORDS_IN_BLOCK ((BLOCK_SIZE - 2 * (int) sizeof(int)) / (int) sizeof(Record))
+
 int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int attrLength)
 {
 	// Don't do anything if name greater than the limit.
