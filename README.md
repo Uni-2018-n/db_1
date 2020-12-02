@@ -26,3 +26,6 @@ From antonis:
   * added a main so you can see some errors
   * possible problem with HT_HP_GetAllEntries and HT_HP_InsertEntry (prints wrong things)
   * added some debug code to see that passed heap integer is working and hash table is working
+
+to fix our problem with compilation i just copy all the needed functions to HT files for now...
+its working but without the use of any HP files.
