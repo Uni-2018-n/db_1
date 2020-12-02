@@ -69,7 +69,7 @@ int HT_CloseIndex(HT_info* header_info){
 }
 
 int HT_InsertEntry(HT_info header_info, Record record){
-  int h = record.id % header_info.numBuckets;
+  int h = HT_function(&record.id, header_info.numBuckets);
 
   int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
   void* block;
@@ -91,15 +91,52 @@ int HT_InsertEntry(HT_info header_info, Record record){
       block = (char *)block + sizeof(int);
     }
   }
-  // heap_instert_to_block(heap, record) //opoy heap einai to heap id(oti epistrefei to BF_OpenFile sthn HP_Openfile->fileDesc)
+  // heap_instert_to_block(heap, record) //TODO: opoy heap einai to heap id(oti epistrefei to BF_OpenFile sthn HP_Openfile->fileDesc)
   BF_WriteBlock(header_info.fileDesc, 0);
   return 0;
 }
 
 int HT_DeleteEntry(HT_info header_info, void *value){
+  int h;
+  if(header_info.attrType == 'i'){
+    h = HT_function((int*)value, (int)header_info.numBuckets);
+  }else{
+    h = HT_function((char*)value, (int)header_info.numBuckets);
+  }
+
+
+  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
+  void* block;
+  BF_ReadBlock(header_info.fileDesc, 0, &block);
+  char* ht = new char[3];
+  memcpy(ht, (char *)block, 3);
+  if(strcmp(ht, "HT") != 0){
+    printf("Error block\n");
+    return -1;
+  }
+  block = (char*)block +startup;
+  int heap;
+  for(int i=0;i<header_info.numBuckets;i++){
+    if(i==h){
+      memcpy(&heap, (char *)block, sizeof(int));
+      break;
+    }else{
+      block = (char *)block + sizeof(int);
+    }
+  }
+  //heap_delete_entry(heap_number, id) //TODO: mporw na dosw to heap number kai mono to id oxi olo to record...
   return 0;
 }
 
 int HT_GetAllEntries( HT_info header_info, void *value){
+  return 0;
+}
+
+int HT_function(int* value, int buckets){
+  return *value % buckets;
+}
+
+int HT_function(char* value, int buckets){
+  //TODO: make this
   return 0;
 }

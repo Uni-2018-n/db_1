@@ -27,4 +27,7 @@ int HT_DeleteEntry(HT_info header_info, void *value);
 
 int HT_GetAllEntries( HT_info header_info, void *value);
 
+int HT_function(int* value, int buckets);
+
+int HT_function(char* value, int buckets);
 #endif
