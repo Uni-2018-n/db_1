@@ -248,20 +248,20 @@ int HT_HP_DeleteEntry(HT_info* header_info, void* value, int heap_address)
 int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 {
 	int curr_block_addr = heap_address;
-  int should_init_block = 0;
+	int should_init_block = 0;
 
-  // First block in heap.
-  if (heap_address == 0)
-  {
-    should_init_block = 1;
-    // Set the address that the heap is going to get.
-    heap_address = BF_GetBlockCounter(header_info->fileDesc);
-  }
+	// First block in heap.
+	if (heap_address == 0)
+	{
+		should_init_block = 1;
+		// Set the address that the heap is going to get.
+		heap_address = BF_GetBlockCounter(header_info->fileDesc);	
+	}
 
-  void* block = nullptr;
+	void* block = nullptr;
 
 	int available_block_addr = -1; // a block with space to add a record.
-  int next_block_addr = -1;
+	int next_block_addr = -1;
 
 	// Loop until you have read all the blocks.
 	while(1)
@@ -284,20 +284,20 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 		if (IsKeyInBlock(record, block) > -1)
 			return -1;
 
+		next_block_addr = ReadNextBlockAddr(block);		
+
 		int num_of_records = ReadNumOfRecords(block);
 
 		// If we haven't enough space for another record.
 		if (num_of_records + 1 > MAX_RECORDS_IN_BLOCK)
 		{
-			next_block_addr = ReadNextBlockAddr(block);
-
 			// If there isn't a next block and we haven't found an available address for a record.
 			if (next_block_addr == -1 && available_block_addr == -1)
 			{
-        int num_of_blocks = BF_GetBlockCounter(header_info->fileDesc);
+        		int num_of_blocks = BF_GetBlockCounter(header_info->fileDesc);
 				WriteNextBlockAddr(block, num_of_blocks);
 				BF_WriteBlock(header_info->fileDesc, curr_block_addr);
-        next_block_addr = num_of_blocks;
+        		next_block_addr = num_of_blocks;
 
 				should_init_block = 1;
 			}
