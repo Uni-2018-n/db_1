@@ -28,20 +28,4 @@ int HT_function(int* value, int buckets);
 
 int HT_function(char* value, int buckets);
 
-int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap);
-int HT_HP_DeleteEntry(HT_info* header_info, void* value, int heap_address);
-int HT_HP_GetAllEntries(HT_info* header_info, void* value, int heap_addr);
-
-int ReadNumOfRecords(void *block);
-void WriteNumOfRecords(void* block, int recordNumber);
-int ReadNextBlockAddr(void* block);
-void WriteNextBlockAddr(void* block, int blockNumber);
-void ReadRecord(void* block, int recordNumber, Record* record);
-void WriteRecord(void* block, int recordNumber, const Record* record);
-int IsBlockEmpty(int file_desc);
-void ReplaceWithLastRecord(int pos, void* block);
-int InitBlock(int fileDesc, void** block);
-int IsKeyInBlock(Record* record, void* block);
-int AssignKeyToRecord(Record* record, void* value, char key_type);
-
 #endif

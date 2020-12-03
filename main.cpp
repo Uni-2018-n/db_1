@@ -19,11 +19,10 @@ int main(){
 	printf("t: %d %c %s %d %ld\n", t->fileDesc, t->attrType, t->attrName, t->attrLength, t->numBuckets);
 
 	for(int i=0;i<1000;i++){
-		printf("%d ", i);
 		if(HT_InsertEntry(*t, items[i])<0){
 			printf("error\n");
 		}
-		printf("ok\n");
+		printf("added: %d\n", i);
 	}
 
 

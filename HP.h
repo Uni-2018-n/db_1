@@ -2,6 +2,8 @@
 #define __HP_H__
 
 #include "Record.h"
+#include "HT.h"
+
 
 #define MAX_ATTR_NAME_SIZE 15
 
@@ -10,7 +12,7 @@ struct HP_info
     int fileDesc;
     char attrType;
     char attrName[MAX_ATTR_NAME_SIZE];
-    int attrLength; 
+    int attrLength;
 };
 
 int HP_CreateFile(const char *fileName, char attrType, const char* attrName, int attrLength);
@@ -19,6 +21,7 @@ int HP_CloseFile(HP_info* header_info);
 int HP_InsertEntry(HP_info header_info, Record record);
 int HP_DeleteEntry(HP_info header_info, void *value);
 int HP_GetAllEntries(HP_info header_info, void *value);
+
 int ReadNumOfRecords(void *block);
 void WriteNumOfRecords(void* block, int recordNumber);
 int ReadNextBlockAddr(void* block);
@@ -31,6 +34,11 @@ void ReplaceWithLastRecord(int pos, void* block);
 int InitBlock(int fileDesc, void** block);
 int IsKeyInBlock(Record* record, void* block);
 int AssignKeyToRecord(Record* record, void* value, char key_type);
+
+
+int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap);
+int HT_HP_DeleteEntry(HT_info* header_info, void* value, int heap_address);
+int HT_HP_GetAllEntries(HT_info* header_info, void* value, int heap_addr);
 
 // TODO: Remove this.
 void PrintAllEntries(HP_info header_info);
