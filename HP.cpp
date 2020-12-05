@@ -394,23 +394,29 @@ int HT_HP_GetAllEntries(HT_info* header_info, void* value, int heap_addr)
 
 int HT_HP_GetRecordCounter(HT_info* header_info, int heap_addr)
 {
-  if (heap_addr == 0)
-    return -1;
+  if (heap_addr == 0){
+		return -1;
+	}
 
 	void* block;
 	int curr_block_addr = heap_addr;
-  	int counter = 0; // Counts how many records there are in a heap.
+  int counter = 0; // Counts how many records there are in a heap.
 
+	int i=0;
   while (curr_block_addr != -1)
 	{
-		if (BF_ReadBlock(header_info->fileDesc, curr_block_addr, &block) != 0)
+		if (BF_ReadBlock(header_info->fileDesc, curr_block_addr, &block) < 0)
 			return -1;
-
+			// if(i == 3){
+			// 	return -1;
+			// }
+			// i++;
 		counter += ReadNumOfRecords(block);
 
     	curr_block_addr = ReadNextBlockAddr(block);
 	}
-
+	// printf("the counter: %d\n", counter);
+	// printf("heap: %d\n", heap_addr);
 	return counter;
 }
 

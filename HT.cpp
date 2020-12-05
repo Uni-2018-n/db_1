@@ -3,7 +3,7 @@
 #include "HP.h"
 #include <cstring>
 #include <iostream>
-#define MAX_RECORDS_IN_BLOCK ((BLOCK_SIZE - 2 * (int) sizeof(int)) / (int) sizeof(Record))
+#define MAX_BUCKETS_IN_BLOCK ((BLOCK_SIZE - 2 * (int) sizeof(int)) / (int) sizeof(int))
 
 int HT_CreateIndex(const char *fileName, const char attrType, const char* attrName, const int attrLength, const int buckets){
   if(strlen(attrName) > MAX_ATTR_NAME_SIZE-1){ //failsafe if name is too big
@@ -170,6 +170,7 @@ int HT_GetAllEntries(HT_info header_info, void *value){
         memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
         break;
     }
+    memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
   }
 
   return HT_HP_GetAllEntries(&header_info, value, heap); //call the function to print the entry and return the blocks searched to find the entry
@@ -179,7 +180,7 @@ int HT_function(int* value, int buckets){
   char temp[32];
   sprintf(temp, "%d", *value);
   unsigned int hash = 5381; // djb2 hash function from data structures class
-  for(int i=0;i<32;i++){
+  for(int i=0;temp[i] != '\0';i++){
     hash = (hash << 5) + hash + temp[i];
   }
   return hash % buckets;
@@ -210,16 +211,21 @@ int HashStatistics(char* filename){
   int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
 
   int heap;
-  int i;
+
   memcpy(&heap, (char*)block + startup + sizeof(int)*0, sizeof(int));
+  int array[numBuckets];
+  for(int i=0;i<numBuckets;i++){
+    memcpy(&array[i], (char*)block + startup + sizeof(int)*i, sizeof(int));
+    printf("t: %d\n", array[i]);
+  }
   int temp = HT_HP_GetRecordCounter(header_info, heap);
   int min = temp;
   int max = temp;
   int average_records = 0;
   int average_blocks = 0;
-
-  for(i=0;i< numBuckets; i++){
-    memcpy(&heap, (char*)block + startup + sizeof(int)*i, sizeof(int));
+  printf("\n\n\n");
+  for(int i=0;i< numBuckets; i++){
+    heap = array[i];
     int num = HT_HP_GetBlockCounter(header_info, heap);
 
     int pl_records = HT_HP_GetRecordCounter(header_info, heap);
@@ -233,31 +239,29 @@ int HashStatistics(char* filename){
     }
     average_blocks += num;
     average_records += pl_records;
-
   }
   average_blocks = average_blocks/numBuckets;
   average_records = average_records/numBuckets;
 
   printf("Blocks used by file \"%s\": %d\n", filename, block_counter);
-  printf("Minimum records per bucket: %d\n Maximum records per bucket: %d\n Average: %d\n", min, max, average_records);
+  printf("Minimum records per bucket: %d\nMaximum records per bucket: %d\nAverage: %d\n", min, max, average_records);
   printf("Average number of blocks per bucket: %d\n", average_blocks);
 
   printf("Overflow blocks: \n");
   int overflow=0;
   for(int i=0;i<numBuckets;i++){
     int heap;
-    memcpy(&heap, (char*)block + startup + sizeof(int)*i, sizeof(int));
-    int num = 0;//replace 0 with num of blocks at heap
+    heap = array[i];
+    int num = HT_HP_GetBlockCounter(header_info, heap);
     if(num > 1){
       overflow++;
       printf("For bucket %d, %d\n", i, num-1);
     }
   }
+  printf("Overflow sum: %d\n", overflow);
 
   if(HT_CloseIndex(header_info) <0){
     return -1;
   }
-
-
   return 0;
 }
