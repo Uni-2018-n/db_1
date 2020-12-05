@@ -227,8 +227,8 @@ int HashStatistics(char* filename){
   int average_blocks = 0; //replace 0 with num of blocks for this heap
   for(i=0;i< numBuckets; i++){
     memcpy(&heap, (char*)block + startup + sizeof(int)*i, sizeof(int));
-    int num = 0;//replace 0 with num of block
-    int pl_records = 0;//replace 0 with pl of records of block.
+    int num = 0;//replace 0 with num of blocks at heap
+    int pl_records = 0;//replace 0 with pl of records of heap.
     block_counter += num;
 
     if(pl_records < min){
