@@ -28,4 +28,5 @@ int HT_function(int* value, int buckets);
 
 int HT_function(char* value, int buckets);
 
+int HashStatistics(char* filename);
 #endif
