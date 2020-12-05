@@ -39,6 +39,8 @@ int AssignKeyToRecord(Record* record, void* value, char key_type);
 int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap);
 int HT_HP_DeleteEntry(HT_info* header_info, void* value, int heap_address);
 int HT_HP_GetAllEntries(HT_info* header_info, void* value, int heap_addr);
+int HT_HP_GetRecordCounter(HT_info* header_info, int heap_addr);
+int HT_HP_GetBlockCounter(HT_info* header_info, int heap_addr);
 
 // TODO: Remove this.
 void PrintAllEntries(HP_info header_info);

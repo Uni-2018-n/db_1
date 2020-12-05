@@ -221,14 +221,20 @@ int HashStatistics(char* filename){
   int i;
   memcpy(&heap, (char*)block + startup + sizeof(int)*0, sizeof(int));
   int temp = 0; //replace 0 with num of records into this bucket
+  // HT_HP_GetRecordCounter(header_info, heap);
   int min = temp;
   int max = temp;
   int average_records = 0;
   int average_blocks = 0; //replace 0 with num of blocks for this heap
+  // HT_HP_GetBlockCounter(header_info, heap);
+
   for(i=0;i< numBuckets; i++){
     memcpy(&heap, (char*)block + startup + sizeof(int)*i, sizeof(int));
     int num = 0;//replace 0 with num of blocks at heap
+  // HT_HP_GetBlockCounter(header_info, heap);
+
     int pl_records = 0;//replace 0 with pl of records of heap.
+  // HT_HP_GetRecordCounter(header_info, heap);
     block_counter += num;
 
     if(pl_records < min){
