@@ -196,45 +196,33 @@ int HT_function(char* value, int buckets){//same as int but for characters
 
 
 int HashStatistics(char* filename){
-  int file = BF_OpenFile(filename);
-  if(file < 0){
-    return -1;
-  }
+  HT_info* header_info = HT_OpenIndex(filename);
 
   void* block;
-  if(BF_ReadBlock(file, 0, &block)<0){
+  if(BF_ReadBlock(header_info->fileDesc, 0, &block)<0){
     return -1;
   }
 
   int block_counter=1;
-  char* ht = new char[3];
-  memcpy(ht, (char*)block, 3);
-  if(strcmp(ht, "HT") != 0){
-    return -1;
-  }
 
-  int numBuckets;
-  memcpy(&numBuckets, (char*)block + 3 + sizeof(char)+  MAX_ATTR_NAME_SIZE + sizeof(int), sizeof(long int));
+  int numBuckets =header_info->numBuckets;
+
   int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
 
   int heap;
   int i;
   memcpy(&heap, (char*)block + startup + sizeof(int)*0, sizeof(int));
-  int temp = 0; //replace 0 with num of records into this bucket
-  // HT_HP_GetRecordCounter(header_info, heap);
+  int temp = HT_HP_GetRecordCounter(header_info, heap);
   int min = temp;
   int max = temp;
   int average_records = 0;
-  int average_blocks = 0; //replace 0 with num of blocks for this heap
-  // HT_HP_GetBlockCounter(header_info, heap);
+  int average_blocks = 0;
 
   for(i=0;i< numBuckets; i++){
     memcpy(&heap, (char*)block + startup + sizeof(int)*i, sizeof(int));
-    int num = 0;//replace 0 with num of blocks at heap
-  // HT_HP_GetBlockCounter(header_info, heap);
+    int num = HT_HP_GetBlockCounter(header_info, heap);
 
-    int pl_records = 0;//replace 0 with pl of records of heap.
-  // HT_HP_GetRecordCounter(header_info, heap);
+    int pl_records = HT_HP_GetRecordCounter(header_info, heap);
     block_counter += num;
 
     if(pl_records < min){
@@ -254,10 +242,22 @@ int HashStatistics(char* filename){
   printf("Minimum records per bucket: %d\n Maximum records per bucket: %d\n Average: %d\n", min, max, average_records);
   printf("Average number of blocks per bucket: %d\n", average_blocks);
 
-  //here do everything needed for statistics.d
-  if(BF_CloseFile(file) <0){
+  printf("Overflow blocks: \n");
+  int overflow=0;
+  for(int i=0;i<numBuckets;i++){
+    int heap;
+    memcpy(&heap, (char*)block + startup + sizeof(int)*i, sizeof(int));
+    int num = 0;//replace 0 with num of blocks at heap
+    if(num > 1){
+      overflow++;
+      printf("For bucket %d, %d\n", i, num-1);
+    }
+  }
+
+  if(HT_CloseIndex(header_info) <0){
     return -1;
   }
+
 
   return 0;
 }

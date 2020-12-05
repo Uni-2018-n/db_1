@@ -26,6 +26,8 @@ int main(){
 	}
 
 
+
+
 	// Record yeet;
 	// yeet.id = 3;
 	// strcpy(yeet.name, "name");
@@ -37,6 +39,8 @@ int main(){
 	// printf("HT_DeleteEntry: %d\n", HT_DeleteEntry(*t, &(yeet.id)));
 	// printf("\nHT_GetAllEntries(gives the number of blocks needed to read): %d\n", HT_GetAllEntries(*t, &(yeet.id)));
 
-	printf("close index: %d\n", HT_CloseIndex(t));
+	printf("close index: %d\n\n\n", HT_CloseIndex(t));
+
+	HashStatistics(temp);
 	return 0;
 }
