@@ -2,9 +2,12 @@
 
 #include "HT.h"
 #include <cstring>
+
+#define PL 1000
+
 int main(){
-	Record items[1000];
-	for(int i=0;i<1000;i++){
+	Record items[PL];
+	for(int i=0;i<PL;i++){
 		items[i].id = i;
 		sprintf(items[i].name, "name_%d", i);
 		sprintf(items[i].surname, "surname_%d", i);
@@ -13,12 +16,12 @@ int main(){
 
 
 	char temp[256] = "temp";
-	HT_CreateIndex(temp, 'i', "id", 14, 8);
+	HT_CreateIndex(temp, 'i', "id", 14, 126+8); //with more than one block into the hash table, it runs until 29 record.
 
 	HT_info* t = HT_OpenIndex(temp);
 	printf("t: %d %c %s %d %ld\n", t->fileDesc, t->attrType, t->attrName, t->attrLength, t->numBuckets);
 
-	for(int i=0;i<1000;i++){
+	for(int i=0;i<PL;i++){
 		if(HT_InsertEntry(*t, items[i])<0){
 			printf("error\n");
 		}

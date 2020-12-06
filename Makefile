@@ -1,8 +1,16 @@
-CPPFLAGS := -std=c++11 -Wall -O0 -g
-main: main.cpp HT.cpp HT.h HP.cpp HP.h Makefile
-	g++ ${CPPFLAGS} main.cpp  HT.cpp HP.cpp -L. -static -l:BF_64.a -o main
+FLAGS = -std=c++11 -Wall -O0 -g
+SOURCE = main.cpp HT.cpp HP.cpp
+ITEM = main
 
-clean :
-	rm -rf main
-	rm -rf *.o
-	rm -rf temp
+clean : run
+	rm -rf $(ITEM)
+
+run : compile
+	./$(ITEM)
+
+debug : $(ITEM)
+	gdb $(ITEM)
+
+compile : $(SOURCE)
+	# gcc $(FLAGS) $(ITEM) $(SOURCE)
+	g++ $(FLAGS) $(SOURCE) -L. -static -l\:BF_64.a -o $(ITEM)

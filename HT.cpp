@@ -5,6 +5,7 @@
 #include <iostream>
 #define MAX_BUCKETS_IN_BLOCK ((BLOCK_SIZE - 2 * (int) sizeof(int)) / (int) sizeof(int))
 
+using namespace std;
 int HT_CreateIndex(const char *fileName, const char attrType, const char* attrName, const int attrLength, const int buckets){
   if(strlen(attrName) > MAX_ATTR_NAME_SIZE-1){ //failsafe if name is too big
     return -1;
@@ -35,13 +36,27 @@ int HT_CreateIndex(const char *fileName, const char attrType, const char* attrNa
 	memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE , &attrLength, sizeof(int));
   memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int), &buckets, sizeof(int));
 
+  int pl_blocks = (buckets / MAX_BUCKETS_IN_BLOCK)+ 1;
+  for(int i=0;i<pl_blocks;i++){
+    if(BF_AllocateBlock(file) < 0){
+      return -1;
+    }
+    if(BF_ReadBlock(file, BF_GetBlockCounter(file)-1, &block) < 0){
+      return -1;
+    }
+    int max;
+    if(i == pl_blocks-1){
+      max = buckets - MAX_BUCKETS_IN_BLOCK*i;
+    }else{
+      max = MAX_BUCKETS_IN_BLOCK;
+    }
 
-  for(int i=0;i<buckets;i++){//after that, for every bucket allocate space to be able to save the address of the bucket. for now set as 0
-    int temp =0;
-    memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int) + sizeof(int)*i, &temp, sizeof(int));
+    for(int j=0;j<max;j++){
+      int temp =0;
+      memcpy((char*)block+ sizeof(int)*j, &temp, sizeof(int));
+    }
+    BF_WriteBlock(file, BF_GetBlockCounter(file)-1);
   }
-
-  BF_WriteBlock(file, 0); //update the block so changes will be saved
 
   if(BF_CloseFile(file) < 0){
     return -1;
@@ -83,21 +98,40 @@ int HT_CloseIndex(HT_info* header_info){
 
 int HT_InsertEntry(HT_info header_info, Record record){
   int h = HT_function(&record.id, header_info.numBuckets);//get the hash function output for that id and return a number from 0 to numBuckets
-  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);//we dont care to view anything of the "header" part of the block so skip that
+  // int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);//we dont care to view anything of the "header" part of the block so skip that
   void* block;
-  if(BF_ReadBlock(header_info.fileDesc, 0, &block) <0){
-    return -1;
-  }
-
   int heap;
+  int j;
   int i;
-  for(i=0;i<header_info.numBuckets; i++){//for every bucket check if its the desired bucket ( if its the same as the hash function returned)
-    if(i==h){
-        memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int)); //if it is save the heap's address
-        break; //and stop the loop
-    }
-  }
+  int counter=0;
+  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
 
+  for(i=0;i<pl_blocks;i++){
+    if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){
+      return -1;
+    }
+
+    int max;
+    heap=0;
+    if(i == pl_blocks-1){
+      max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
+    }else{
+      max = MAX_BUCKETS_IN_BLOCK;
+    }
+    int found =0;
+    for(j=0;j<max;j++){
+      if(counter == h){
+        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
+        found =1;
+        break;
+      }
+      counter++;
+    }
+    if(found){
+      break;
+    }
+
+  }
   int new_heap_addr = HT_HP_InsertEntry(&header_info, &record, heap); //then pass it to HT_HP_InsertEntry to add it into the heap's blocks
   if (new_heap_addr == -1){
     return -1;
@@ -105,15 +139,28 @@ int HT_InsertEntry(HT_info header_info, Record record){
 
   // printf("new_heap_addr: %d\n", new_heap_addr);
   if (new_heap_addr != heap){ //if the heap was empty the upper loop returned the int heap variable as 0 so we need to set the new address returned by HT_HP_InsertEntry
-    memcpy((char*)block+startup+sizeof(int)*i, &new_heap_addr, sizeof(int));
-    BF_WriteBlock(header_info.fileDesc, 0); //and save changed
+    memcpy((char*)block +sizeof(int)*j, &new_heap_addr, sizeof(int));
+    BF_WriteBlock(header_info.fileDesc, i+1); //and save changed
   }
 
 
   // this tests if hash_table's addresses is working (check if something changes from 0)
-  // for(i=0;i<header_info.numBuckets; i++){
-  //       memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
-  //       printf("hash table: %d\n", heap);
+  // for(int i=0;i<pl_blocks;i++){
+  //   printf("for block: %d\n", i+1);
+  //   if(BF_ReadBlock(header_info.fileDesc, i+1, &block)< 0){
+  //     return -1;
+  //   }
+  //   int max;
+  //   if(i == pl_blocks-1){
+  //     max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
+  //   }else{
+  //     max = MAX_BUCKETS_IN_BLOCK;
+  //   }
+  //   int heap;
+  //   for(int j=0;j<max;j++){
+  //     memcpy(&heap, (char*)block + sizeof(int)*j, sizeof(int));
+  //     printf("hash table: %d\n", heap);
+  //   }
   // }
   return 0;
 }
@@ -127,19 +174,38 @@ int HT_DeleteEntry(HT_info header_info, void *value){
   }
 
 
-  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int); //same thing as above we dont really care about the "header" data of the block
   void* block;
-  if(BF_ReadBlock(header_info.fileDesc, 0, &block) <0){
-    return -1;
-  }
-
   int heap;
+  int j;
   int i;
-  for(i=0;i<header_info.numBuckets; i++){//find the desired bucket and save the heap address
-    if(i==h){
-        memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
-        break;
+  int counter=0;
+  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
+
+  for(i=0;i<pl_blocks;i++){
+    if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){
+      return -1;
     }
+
+    int max;
+    heap=0;
+    if(i == pl_blocks-1){
+      max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
+    }else{
+      max = MAX_BUCKETS_IN_BLOCK;
+    }
+    int found =0;
+    for(j=0;j<max;j++){
+      if(counter == h){
+        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
+        found =1;
+        break;
+      }
+      counter++;
+    }
+    if(found){
+      break;
+    }
+
   }
 
   if (HT_HP_DeleteEntry(&header_info, value, heap) != 0){ // call the HT_HP_DeleteEntry to remove the entry from the heap
@@ -157,20 +223,38 @@ int HT_GetAllEntries(HT_info header_info, void *value){
     h = HT_function((char*)value, (int)header_info.numBuckets);
   }
 
-  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);//same thing as above
   void* block;
-  if(BF_ReadBlock(header_info.fileDesc, 0, &block) < 0){
-    return -1;
-  }
-
   int heap;
+  int j;
   int i;
-  for(i=0;i<header_info.numBuckets; i++){//find out the bucket that the entry is in and return the heap's address
-    if(i==h){
-        memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
-        break;
+  int counter=0;
+  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
+
+  for(i=0;i<pl_blocks;i++){
+    if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){
+      return -1;
     }
-    memcpy(&heap, (char *)block + startup + sizeof(int)*i, sizeof(int));
+
+    int max;
+    heap=0;
+    if(i == pl_blocks-1){
+      max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
+    }else{
+      max = MAX_BUCKETS_IN_BLOCK;
+    }
+    int found =0;
+    for(j=0;j<max;j++){
+      if(counter == h){
+        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
+        found =1;
+        break;
+      }
+      counter++;
+    }
+    if(found){
+      break;
+    }
+
   }
 
   return HT_HP_GetAllEntries(&header_info, value, heap); //call the function to print the entry and return the blocks searched to find the entry
@@ -199,36 +283,47 @@ int HT_function(char* value, int buckets){//same as int but for characters
 int HashStatistics(char* filename){
   HT_info* header_info = HT_OpenIndex(filename);
 
-  void* block;
-  if(BF_ReadBlock(header_info->fileDesc, 0, &block)<0){
-    return -1;
-  }
-
-  int block_counter=1;
-
   int numBuckets =header_info->numBuckets;
+  int pl_blocks = (numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
+  int block_counter=1 + pl_blocks;
 
-  int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);
-
-  int heap;
-
-  memcpy(&heap, (char*)block + startup + sizeof(int)*0, sizeof(int));
   int array[numBuckets];
-  for(int i=0;i<numBuckets;i++){
-    memcpy(&array[i], (char*)block + startup + sizeof(int)*i, sizeof(int));
-    printf("t: %d\n", array[i]);
+
+  void* block;
+  int heap;
+  int j;
+  int i;
+  int counter=0;
+
+  for(i=0;i<pl_blocks;i++){
+    if(BF_ReadBlock(header_info->fileDesc, i+1, &block) <0){
+      return -1;
+    }
+
+    int max;
+    heap=0;
+    if(i == pl_blocks-1){
+      max = header_info->numBuckets - MAX_BUCKETS_IN_BLOCK*i;
+    }else{
+      max = MAX_BUCKETS_IN_BLOCK;
+    }
+    for(j=0;j<max;j++){
+        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int));
+        array[counter] = heap;
+      counter++;
+    }
   }
-  int temp = HT_HP_GetRecordCounter(header_info, heap);
+  int temp = HT_HP_GetRecordCounter(header_info, array[0]);
   int min = temp;
   int max = temp;
   int average_records = 0;
   int average_blocks = 0;
-  printf("\n\n\n");
   for(int i=0;i< numBuckets; i++){
     heap = array[i];
-    int num = HT_HP_GetBlockCounter(header_info, heap);
+    int num = HT_HP_GetBlockCounter(header_info, heap);//here it goes into infinite loop
 
     int pl_records = HT_HP_GetRecordCounter(header_info, heap);
+
     block_counter += num;
 
     if(pl_records < min){
@@ -239,6 +334,7 @@ int HashStatistics(char* filename){
     }
     average_blocks += num;
     average_records += pl_records;
+
   }
   average_blocks = average_blocks/numBuckets;
   average_records = average_records/numBuckets;
