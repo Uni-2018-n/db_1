@@ -312,6 +312,9 @@ int HashStatistics(char* filename){
       counter++;
     }
   }
+  // for(int i=0;i<numBuckets;i++){ //print all heaps
+  //   cout << array[i] << endl;
+  // }
 
   //we used an array here because inside HT_HP_* functions we have BF_ReadBlock function that changes the void* block data so its not possible for us to have the correct one
   int temp = HT_HP_GetRecordCounter(header_info, array[0]);
@@ -321,6 +324,9 @@ int HashStatistics(char* filename){
   int average_blocks = 0;
   for(int i=0;i< numBuckets; i++){//for every bucket do every calculation to find the output
     heap = array[i];
+    if(heap == 0){//if its 0 then we have an unused heap so skip it
+      continue;
+    }
     int num = HT_HP_GetBlockCounter(header_info, heap);//here it goes into infinite loop
 
     int pl_records = HT_HP_GetRecordCounter(header_info, heap);
