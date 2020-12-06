@@ -36,22 +36,22 @@ int HT_CreateIndex(const char *fileName, const char attrType, const char* attrNa
 	memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE , &attrLength, sizeof(int));
   memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int), &buckets, sizeof(int));
 
-  int pl_blocks = (buckets / MAX_BUCKETS_IN_BLOCK)+ 1;
-  for(int i=0;i<pl_blocks;i++){
-    if(BF_AllocateBlock(file) < 0){
+  int pl_blocks = (buckets / MAX_BUCKETS_IN_BLOCK)+ 1; //calculate how many blocks are needed for buckets
+  for(int i=0;i<pl_blocks;i++){//for every block
+    if(BF_AllocateBlock(file) < 0){//allocate it
       return -1;
     }
-    if(BF_ReadBlock(file, BF_GetBlockCounter(file)-1, &block) < 0){
+    if(BF_ReadBlock(file, BF_GetBlockCounter(file)-1, &block) < 0){//read it
       return -1;
     }
-    int max;
-    if(i == pl_blocks-1){
-      max = buckets - MAX_BUCKETS_IN_BLOCK*i;
+    int max;//and find how many blocks we need to add in it
+    if(i == pl_blocks-1){//if its the last block
+      max = buckets - MAX_BUCKETS_IN_BLOCK*i;//set as max only the number that the buckets are left to add
     }else{
-      max = MAX_BUCKETS_IN_BLOCK;
-    }
+      max = MAX_BUCKETS_IN_BLOCK; // else set the full number of buckets
+    }//for example if we have 134 buckets we need 2 blocks(lets say i is 0 and 1 for each block) so for first block we have 126 buckets and for second we have 134-(126*1) = 8 buckets
 
-    for(int j=0;j<max;j++){
+    for(int j=0;j<max;j++){//and then with each time the correct max initialize the bucket as 0
       int temp =0;
       memcpy((char*)block+ sizeof(int)*j, &temp, sizeof(int));
     }
@@ -98,20 +98,19 @@ int HT_CloseIndex(HT_info* header_info){
 
 int HT_InsertEntry(HT_info header_info, Record record){
   int h = HT_function(&record.id, header_info.numBuckets);//get the hash function output for that id and return a number from 0 to numBuckets
-  // int startup = 3+ sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int) + sizeof(int);//we dont care to view anything of the "header" part of the block so skip that
   void* block;
   int heap;
   int j;
   int i;
   int counter=0;
-  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
+  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;//how many blocks are used to store buckets
 
-  for(i=0;i<pl_blocks;i++){
-    if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){
+  for(i=0;i<pl_blocks;i++){//for each block
+    if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){//read it
       return -1;
     }
 
-    int max;
+    int max;//calculate how many buckets are in the specific block as above
     heap=0;
     if(i == pl_blocks-1){
       max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
@@ -120,24 +119,24 @@ int HT_InsertEntry(HT_info header_info, Record record){
     }
     int found =0;
     for(j=0;j<max;j++){
-      if(counter == h){
+      if(counter == h){//with the help of an external counter go through every block and find the correct bucket's address
         memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
         found =1;
         break;
       }
-      counter++;
+      counter++; //we use an external counter because everytime j is reset to 0 but our implementation continues until the number of buckets
     }
-    if(found){
+    if(found){//incase of found not need to go to the next block so break the loop
       break;
     }
 
   }
+  //here we have heap with the correct block's address of the bucket with our entry inside
   int new_heap_addr = HT_HP_InsertEntry(&header_info, &record, heap); //then pass it to HT_HP_InsertEntry to add it into the heap's blocks
   if (new_heap_addr == -1){
     return -1;
   }
 
-  // printf("new_heap_addr: %d\n", new_heap_addr);
   if (new_heap_addr != heap){ //if the heap was empty the upper loop returned the int heap variable as 0 so we need to set the new address returned by HT_HP_InsertEntry
     memcpy((char*)block +sizeof(int)*j, &new_heap_addr, sizeof(int));
     BF_WriteBlock(header_info.fileDesc, i+1); //and save changed
@@ -166,7 +165,7 @@ int HT_InsertEntry(HT_info header_info, Record record){
 }
 
 int HT_DeleteEntry(HT_info header_info, void *value){
-  int h;
+  int h;//same as above calcualte the hash function
   if(header_info.attrType == 'i'){
     h = HT_function((int*)value, (int)header_info.numBuckets);
   }else{
@@ -179,14 +178,14 @@ int HT_DeleteEntry(HT_info header_info, void *value){
   int j;
   int i;
   int counter=0;
-  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
+  int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;//get how many blocks are needed for hash table
 
-  for(i=0;i<pl_blocks;i++){
+  for(i=0;i<pl_blocks;i++){//read each block, get the heap's address and give it to the heap function
     if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){
       return -1;
     }
 
-    int max;
+    int max;//same implementation as above
     heap=0;
     if(i == pl_blocks-1){
       max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
@@ -196,7 +195,7 @@ int HT_DeleteEntry(HT_info header_info, void *value){
     int found =0;
     for(j=0;j<max;j++){
       if(counter == h){
-        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
+        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int));
         found =1;
         break;
       }
@@ -216,7 +215,7 @@ int HT_DeleteEntry(HT_info header_info, void *value){
 }
 
 int HT_GetAllEntries(HT_info header_info, void *value){
-  int h;
+  int h;//again same implementation as above
   if(header_info.attrType == 'i'){
     h = HT_function((int*)value, (int)header_info.numBuckets);
   }else{
@@ -245,7 +244,7 @@ int HT_GetAllEntries(HT_info header_info, void *value){
     int found =0;
     for(j=0;j<max;j++){
       if(counter == h){
-        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
+        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int));
         found =1;
         break;
       }
@@ -285,9 +284,9 @@ int HashStatistics(char* filename){
 
   int numBuckets =header_info->numBuckets;
   int pl_blocks = (numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
-  int block_counter=1 + pl_blocks;
+  int block_counter=1 + pl_blocks;//the block counter starts with one because we have the header block, and then we add the pl of blocks used by the hash table
 
-  int array[numBuckets];
+  int array[numBuckets];//initialize this array so we can easily store the heap's addresses
 
   void* block;
   int heap;
@@ -295,7 +294,7 @@ int HashStatistics(char* filename){
   int i;
   int counter=0;
 
-  for(i=0;i<pl_blocks;i++){
+  for(i=0;i<pl_blocks;i++){//as above for each block read it and go through its buckets
     if(BF_ReadBlock(header_info->fileDesc, i+1, &block) <0){
       return -1;
     }
@@ -309,16 +308,18 @@ int HashStatistics(char* filename){
     }
     for(j=0;j<max;j++){
         memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int));
-        array[counter] = heap;
+        array[counter] = heap;//store the heap into the array
       counter++;
     }
   }
+
+  //we used an array here because inside HT_HP_* functions we have BF_ReadBlock function that changes the void* block data so its not possible for us to have the correct one
   int temp = HT_HP_GetRecordCounter(header_info, array[0]);
-  int min = temp;
+  int min = temp;//help variables to calculate min, max and averages
   int max = temp;
   int average_records = 0;
   int average_blocks = 0;
-  for(int i=0;i< numBuckets; i++){
+  for(int i=0;i< numBuckets; i++){//for every bucket do every calculation to find the output
     heap = array[i];
     int num = HT_HP_GetBlockCounter(header_info, heap);//here it goes into infinite loop
 
@@ -339,17 +340,18 @@ int HashStatistics(char* filename){
   average_blocks = average_blocks/numBuckets;
   average_records = average_records/numBuckets;
 
+  //and print it
   printf("Blocks used by file \"%s\": %d\n", filename, block_counter);
   printf("Minimum records per bucket: %d\nMaximum records per bucket: %d\nAverage: %d\n", min, max, average_records);
   printf("Average number of blocks per bucket: %d\n", average_blocks);
 
-  printf("Overflow blocks: \n");
+  printf("Overflow blocks: \n");//same thing with overflow
   int overflow=0;
   for(int i=0;i<numBuckets;i++){
     int heap;
     heap = array[i];
     int num = HT_HP_GetBlockCounter(header_info, heap);
-    if(num > 1){
+    if(num > 1){//if the num is > 1 it means that there is an overflow happening
       overflow++;
       printf("For bucket %d, %d\n", i, num-1);
     }
