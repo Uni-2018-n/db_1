@@ -4,6 +4,7 @@ ITEM = main
 
 clean : run
 	rm -rf $(ITEM)
+	rm -rf *.o
 
 run : compile
 	./$(ITEM)

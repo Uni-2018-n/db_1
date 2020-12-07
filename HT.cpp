@@ -36,6 +36,9 @@ int HT_CreateIndex(const char *fileName, const char attrType, const char* attrNa
 	memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE , &attrLength, sizeof(int));
   memcpy((char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE + sizeof(int), &buckets, sizeof(int));
 
+  BF_WriteBlock(file, 0);
+
+
   int pl_blocks = (buckets / MAX_BUCKETS_IN_BLOCK)+ 1; //calculate how many blocks are needed for buckets
   for(int i=0;i<pl_blocks;i++){//for every block
     if(BF_AllocateBlock(file) < 0){//allocate it
@@ -118,10 +121,8 @@ int HT_InsertEntry(HT_info header_info, Record record){
       max = MAX_BUCKETS_IN_BLOCK;
     }
     int found =0;
-    // cout << "block: " << i+1 << endl;
     for(j=0;j<max;j++){
       memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
-      // cout << "bucket number: " << counter << " ---> " << heap << endl;
       if(counter == h){//with the help of an external counter go through every block and find the correct bucket's address
         found =1;
         break;
@@ -138,31 +139,10 @@ int HT_InsertEntry(HT_info header_info, Record record){
   if (new_heap_addr == -1){
     return -1;
   }
-
   if (new_heap_addr != heap){ //if the heap was empty the upper loop returned the int heap variable as 0 so we need to set the new address returned by HT_HP_InsertEntry
     memcpy((char*)block +sizeof(int)*j, &new_heap_addr, sizeof(int));
     BF_WriteBlock(header_info.fileDesc, i+1); //and save changed
   }
-
-
-  // this tests if hash_table's addresses is working (check if something changes from 0)
-  // for(int i=0;i<pl_blocks;i++){
-  //   printf("for block: %d\n", i+1);
-  //   if(BF_ReadBlock(header_info.fileDesc, i+1, &block)< 0){
-  //     return -1;
-  //   }
-  //   int max;
-  //   if(i == pl_blocks-1){
-  //     max = header_info.numBuckets - MAX_BUCKETS_IN_BLOCK*i;
-  //   }else{
-  //     max = MAX_BUCKETS_IN_BLOCK;
-  //   }
-  //   int heap;
-  //   for(int j=0;j<max;j++){
-  //     memcpy(&heap, (char*)block + sizeof(int)*j, sizeof(int));
-  //     printf("hash table: %d\n", heap);
-  //   }
-  // }
   return 0;
 }
 
@@ -282,7 +262,6 @@ int HT_function(char* value, int buckets){//same as int but for characters
 
 
 int HashStatistics(char* filename){
-
   HT_info* header_info = HT_OpenIndex(filename);
 
   int numBuckets =header_info->numBuckets;
@@ -315,9 +294,6 @@ int HashStatistics(char* filename){
       counter++;
     }
   }
-  // for(int i=0;i<numBuckets;i++){ //print all heaps
-  //   cout << array[i] << endl;
-  // }
 
   //we used an array here because inside HT_HP_* functions we have BF_ReadBlock function that changes the void* block data so its not possible for us to have the correct one
   int k=0;
@@ -354,22 +330,26 @@ int HashStatistics(char* filename){
   average_records = average_records/numBuckets;
 
   //and print it
-  printf("Blocks used by file \"%s\": %d\n", filename, block_counter);
-  printf("Minimum records per bucket: %d\nMaximum records per bucket: %d\nAverage: %d\n", min, max, average_records);
-  printf("Average number of blocks per bucket: %d\n", average_blocks);
+  cout << "Blocks used by file \"" << filename << "\": " << block_counter << endl;
+  cout << "Minimum records per bucket: " << min << endl;
+  cout << "Maximum records per bucket: " << max << endl;
+  cout << "Average records per bucket: " << average_records << endl;
 
-  printf("Overflow blocks: \n");//same thing with overflow
+  cout << "Average number of blocks per bucket: " << average_blocks << endl;
+
+
+  cout << "Overflow blocks: " << endl;//same thing with overflow
   int overflow=0;
   for(int i=0;i<numBuckets;i++){
     int heap;
     heap = array[i];
     int num = HT_HP_GetBlockCounter(header_info, heap);
     if(num > 1){//if the num is > 1 it means that there is an overflow happening
-      overflow++;
-      printf("For bucket %d, %d\n", i, num-1);
+      overflow += num-1;
+      cout << "For bucket " << i << ", " << num-1 << endl;
     }
   }
-  printf("Overflow sum: %d\n", overflow);
+  cout << "Overflow sum: " << overflow << endl;
 
   if(HT_CloseIndex(header_info) <0){
     return -1;

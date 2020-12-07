@@ -5,7 +5,7 @@
 #include "BF.h"
 
 
-#define PL 19
+#define PL 1000
 
 using namespace std;
 int main(){
@@ -22,21 +22,25 @@ int main(){
 	HT_CreateIndex(temp, 'i', "id", 14, 126+8); //with more than one block into the hash table, it runs until 29 record.
 
 	HT_info* t = HT_OpenIndex(temp);
-	printf("t: %d %c %s %d %ld\n", t->fileDesc, t->attrType, t->attrName, t->attrLength, t->numBuckets);
-
 	for(int i=0;i<PL;i++){
 		if(HT_InsertEntry(*t, items[i])<0){
-			printf("error\n");
+			cout << "error" << endl;
 		}
-		// void* tt;
-		// BF_ReadBlock(t->fileDesc, 0, &tt);
-		// char* ht = new char[3];
-		// memcpy(ht, (char *)tt, 3);
-		// cout << "Test: " << ht << endl;
-		printf("added: %d\n", i);
+		// cout << "added: " << i << endl;
 	}
-	printf("close index: %d\n\n\n", HT_CloseIndex(t));
+	int f= 3;
 
-	HashStatistics(temp);
+	cout << "returned by get all entries" << endl << HT_GetAllEntries(*t, &f) << endl;
+
+	cout << "returned by delete entry" << endl << HT_DeleteEntry(*t, &f) << endl;
+
+	cout << "returned by get all entries" << endl << HT_GetAllEntries(*t, &f) << endl;
+	cout << "close index: " << HT_CloseIndex(t) << endl << endl << endl;
+
+
+	if(HashStatistics(temp)<0){
+		cout << "Hash returned error" << endl;
+		return -1;
+	}
 	return 0;
 }

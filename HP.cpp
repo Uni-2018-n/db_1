@@ -503,7 +503,7 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 		if (should_init_block == 0)
 		{
 			if (BF_ReadBlock(header_info->fileDesc, curr_block_addr, &block) != 0)
-				return 1;
+				return -1;
 		}
 
 		else
@@ -527,7 +527,6 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 		next_block_addr = ReadNextBlockAddr(block);
 
 		int num_of_records = ReadNumOfRecords(block);
-
 		// If we haven't enough space for another record.
 		if (num_of_records + 1 > MAX_RECORDS_IN_BLOCK)
 		{
