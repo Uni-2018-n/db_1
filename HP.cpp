@@ -513,10 +513,16 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 				return -1;
 
 			should_init_block = 0;
+			curr_block_addr = BF_GetBlockCounter(header_info->fileDesc) - 1;
 		}
 
 		if (IsKeyInBlock(record, block) > -1)
 			return -1;
+
+		if (curr_block_addr == 10)
+		{
+			int x = 5;
+		}
 
 		next_block_addr = ReadNextBlockAddr(block);
 
