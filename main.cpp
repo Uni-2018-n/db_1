@@ -2,9 +2,12 @@
 
 #include "HT.h"
 #include <cstring>
+#include "BF.h"
 
-#define PL 1000
 
+#define PL 19
+
+using namespace std;
 int main(){
 	Record items[PL];
 	for(int i=0;i<PL;i++){
@@ -25,23 +28,13 @@ int main(){
 		if(HT_InsertEntry(*t, items[i])<0){
 			printf("error\n");
 		}
+		// void* tt;
+		// BF_ReadBlock(t->fileDesc, 0, &tt);
+		// char* ht = new char[3];
+		// memcpy(ht, (char *)tt, 3);
+		// cout << "Test: " << ht << endl;
 		printf("added: %d\n", i);
 	}
-
-
-
-
-	// Record yeet;
-	// yeet.id = 3;
-	// strcpy(yeet.name, "name");
-	// strcpy(yeet.surname, "surname");
-	// strcpy(yeet.address, "address");
-	//
-	// printf("HT_InsertEntry: %d\n\n", HT_InsertEntry(*t, yeet));
-	// printf("\nHT_GetAllEntries(gives the number of blocks needed to read): %d\n", HT_GetAllEntries(*t,3/));
-	// printf("HT_DeleteEntry: %d\n", HT_DeleteEntry(*t, &(yeet.id)));
-	// printf("\nHT_GetAllEntries(gives the number of blocks needed to read): %d\n", HT_GetAllEntries(*t, &(yeet.id)));
-
 	printf("close index: %d\n\n\n", HT_CloseIndex(t));
 
 	HashStatistics(temp);

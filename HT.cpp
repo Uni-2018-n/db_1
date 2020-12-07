@@ -118,9 +118,11 @@ int HT_InsertEntry(HT_info header_info, Record record){
       max = MAX_BUCKETS_IN_BLOCK;
     }
     int found =0;
+    // cout << "block: " << i+1 << endl;
     for(j=0;j<max;j++){
+      memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
+      // cout << "bucket number: " << counter << " ---> " << heap << endl;
       if(counter == h){//with the help of an external counter go through every block and find the correct bucket's address
-        memcpy(&heap, (char *)block + sizeof(int)*j, sizeof(int)); //if it is save the heap's address
         found =1;
         break;
       }
@@ -280,6 +282,7 @@ int HT_function(char* value, int buckets){//same as int but for characters
 
 
 int HashStatistics(char* filename){
+
   HT_info* header_info = HT_OpenIndex(filename);
 
   int numBuckets =header_info->numBuckets;
@@ -317,7 +320,11 @@ int HashStatistics(char* filename){
   // }
 
   //we used an array here because inside HT_HP_* functions we have BF_ReadBlock function that changes the void* block data so its not possible for us to have the correct one
-  int temp = HT_HP_GetRecordCounter(header_info, array[0]);
+  int k=0;
+  while(array[k] == 0){
+    k++;
+  }
+  int temp = HT_HP_GetRecordCounter(header_info, array[k]);
   int min = temp;//help variables to calculate min, max and averages
   int max = temp;
   int average_records = 0;
