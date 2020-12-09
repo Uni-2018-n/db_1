@@ -210,8 +210,9 @@ int HT_GetAllEntries(HT_info header_info, void *value){
   int i;
   int counter=0;
   int pl_blocks = (header_info.numBuckets / MAX_BUCKETS_IN_BLOCK)+ 1;
-
+  int block_counter = 0;
   for(i=0;i<pl_blocks;i++){
+    block_counter++;
     if(BF_ReadBlock(header_info.fileDesc, i+1, &block) <0){
       return -1;
     }
@@ -238,7 +239,7 @@ int HT_GetAllEntries(HT_info header_info, void *value){
 
   }
 
-  return HT_HP_GetAllEntries(&header_info, value, heap); //call the function to print the entry and return the blocks searched to find the entry
+  return block_counter + HT_HP_GetAllEntries(&header_info, value, heap); //call the function to print the entry and return the blocks searched to find the entry
 }
 
 int HT_function(int* value, int buckets){

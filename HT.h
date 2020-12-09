@@ -5,7 +5,6 @@
 #define MAX_ATTR_NAME_SIZE 15
 typedef struct {
   int fileDesc;
-  char ht[3];
   char attrType;
   char attrName[MAX_ATTR_NAME_SIZE];
   int attrLength;
