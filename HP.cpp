@@ -70,6 +70,7 @@ HP_info* HP_OpenFile(const char *fileName)
 	if (strcmp(type, "HP") != 0)
 		return nullptr;
 
+	// Copy the data to the struct.
 	memcpy(&(header_info->attrType), (char *)block + 3, sizeof(char));
 	memcpy(header_info->attrName, ((char *)block) + 3 + sizeof(char), MAX_ATTR_NAME_SIZE);
 	memcpy(&(header_info->attrLength) , (char *)block + 3 + sizeof(char) + MAX_ATTR_NAME_SIZE, sizeof(int));
@@ -394,29 +395,24 @@ int HT_HP_GetAllEntries(HT_info* header_info, void* value, int heap_addr)
 
 int HT_HP_GetRecordCounter(HT_info* header_info, int heap_addr)
 {
-  if (heap_addr == 0){
+	if (heap_addr == 0){
 		return -1;
 	}
 
 	void* block;
 	int curr_block_addr = heap_addr;
-  int counter = 0; // Counts how many records there are in a heap.
+	int counter = 0; // Counts how many records there are in a heap.
 
-	int i=0;
-  while (curr_block_addr != -1)
+	while (curr_block_addr != -1)
 	{
 		if (BF_ReadBlock(header_info->fileDesc, curr_block_addr, &block) < 0)
 			return -1;
-			// if(i == 3){
-			// 	return -1;
-			// }
-			// i++;
+
 		counter += ReadNumOfRecords(block);
 
     	curr_block_addr = ReadNextBlockAddr(block);
 	}
-	// printf("the counter: %d\n", counter);
-	// printf("heap: %d\n", heap_addr);
+
 	return counter;
 }
 
@@ -519,11 +515,6 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 		if (IsKeyInBlock(record, block) > -1)
 			return -1;
 
-		if (curr_block_addr == 10)
-		{
-			int x = 5;
-		}
-
 		next_block_addr = ReadNextBlockAddr(block);
 
 		int num_of_records = ReadNumOfRecords(block);
@@ -569,41 +560,4 @@ int HT_HP_InsertEntry(HT_info* header_info, Record* record, int heap_address)
 	}
 
 	return heap_address;
-}
-
-
-
-
-
-// TODO: Remove this function.
-void PrintAllEntries(HP_info header_info)
-{
-	if (IsBlockEmpty(header_info.fileDesc))
-		return;
-
-	void* block;
-	Record record;
-
-	int num_of_blocks = BF_GetBlockCounter(header_info.fileDesc);
-
-	for (int i = 1; i < num_of_blocks; i++)
-	{
-		if (BF_ReadBlock(header_info.fileDesc, i, &block) != 0)
-			return;
-
-		int num_of_records = ReadNumOfRecords(block);
-
-		for (int y = 0; y < num_of_records; y++)
-		{
-			ReadRecord(block, y, &record);
-
-			std::cout << "block: " << i
-					  << "\nid: " << record.id
-					  << "\nname: " << record.name
-					  << "\nsurname: " << record.surname
-					  << "\naddress: " << record.address
-					  << "\nnum_of_records: " << num_of_records
-					  << std::endl << std::endl;
-		}
-	}
 }

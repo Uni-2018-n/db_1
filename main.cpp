@@ -4,41 +4,69 @@
 #include <cstring>
 #include "BF.h"
 
-
-#define PL 1000
+#define NUM_OF_ENTRIES 1000
 
 using namespace std;
 int main(){
-	Record items[PL];
-	for(int i=0;i<PL;i++){
+	// Create a lot of entries.
+	// (Easier than reading them from the provided files.)
+	Record items[NUM_OF_ENTRIES];
+	for(int i=0;i<NUM_OF_ENTRIES;i++)
+	{
 		items[i].id = i;
 		sprintf(items[i].name, "name_%d", i);
 		sprintf(items[i].surname, "surname_%d", i);
 		sprintf(items[i].address, "address_%d", i);
 	}
 
+	char my_db[15] = "my_db";
+	HT_CreateIndex(my_db, 'i', "id", 14, 126+8);
 
-	char temp[256] = "temp";
-	HT_CreateIndex(temp, 'i', "id", 14, 126+8); //with more than one block into the hash table, it runs until 29 record.
+	HT_info* index = HT_OpenIndex(my_db);
 
-	HT_info* t = HT_OpenIndex(temp);
-	for(int i=0;i<PL;i++){
-		if(HT_InsertEntry(*t, items[i])<0){
-			cout << "error" << endl;
+	//Insert the entries inside the database.
+	for (int i = 0; i < NUM_OF_ENTRIES; i++)
+	{
+		if (HT_InsertEntry(*index, items[i]) < 0)
+		{
+			cout << "There was an error in the insertion of entry " << items[i].id << endl;
+			return 1;
 		}
-		// cout << "added: " << i << endl;
 	}
-	int f= 3;
 
-	cout << "returned by get all entries" << endl << HT_GetAllEntries(*t, &f) << endl;
+	int entries_to_delete[] = {1, 18, 25, 62, 32, 116, 99, 442, 482};
 
-	cout << "returned by delete entry" << endl << HT_DeleteEntry(*t, &f) << endl;
+	// Check if the entries exist.
+	for (auto entry : entries_to_delete)
+	{
+		if (HT_GetAllEntries(*index, &entry) == -1)
+		{
+			cout << "The entry: " << entry << " wasn't found." << endl;
+			return 1;
+		}
+	}
 
-	cout << "returned by get all entries" << endl << HT_GetAllEntries(*t, &f) << endl;
-	cout << "close index: " << HT_CloseIndex(t) << endl << endl << endl;
+	// Delete the entries.
+	for (auto entry : entries_to_delete)
+	{
+		if (HT_DeleteEntry(*index, &entry) == -1)
+		{
+			cout << "There was an error in the deletion of the entry: " << entry;
+			return 1;
+		}
+	}
 
+	// Check if any of the deleted entries exist.
+	for (auto entry : entries_to_delete)
+	{
+		if (HT_GetAllEntries(*index, &entry) != -1)
+		{
+			cout << "The entry: " << entry << " was found." << endl;
+			return 1;
+		}
+	}
 
-	if(HashStatistics(temp)<0){
+	if(HashStatistics(my_db)<0){
 		cout << "Hash returned error" << endl;
 		return -1;
 	}

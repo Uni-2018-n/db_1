@@ -239,7 +239,14 @@ int HT_GetAllEntries(HT_info header_info, void *value){
 
   }
 
-  return block_counter + HT_HP_GetAllEntries(&header_info, value, heap); //call the function to print the entry and return the blocks searched to find the entry
+  //call the function to print the entry and return the blocks searched to find the entry.
+  int result = HT_HP_GetAllEntries(&header_info, value, heap);
+
+  if (result == -1) 
+    return -1;
+
+  else
+    return block_counter + result;
 }
 
 int HT_function(int* value, int buckets){

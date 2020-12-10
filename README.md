@@ -1,3 +1,35 @@
+Η εργασία έγινε από τους:
+	* Αντώνης Καλαμάκης (sdi1800056)
+	* Χρήστος Καφρίτσας  (sdi1800072)
+
+We have changed the file BF.h in the following ways:
+	* Added extern in the variable BF_Errno.
+	* Added extern "C" in a #ifdef __cplusplus, in order for
+	the code to compile under g++.
+
+In the main.cpp file we chose to use the HT database, because, it uses some of the HP functions.
+
+When we create the databases (in both hp and ht),
+we write "HP" or "HT", in the start, so we can check if the file
+opened is valid for the database.
+
+HP.cpp	
+* The functions behave in the expected way.
+* There is a limit (15 characters) in the key's name,
+when we use HP_CreateFIle because we need to store it in a struct.
+* The function HP_GetAllEntries, stops after finding the value, specified because we only search for keys and not other attributes in this project.
+* The program can support char type keys, with little modification.
+* In the HP.[cpp/h] files we have included the HT_HP_* functions,
+which are very similar to the HP ones but also different because
+they are used for the hash based database.
+Because of that we need both HP and HT files for a successful compilation of a HT program and only HP files for a HP one.
+* Blocks are stored one after another in the file. 
+In the end of the block, 
+I write the number of Records that are inside the file and 
+the <address> of the the next block. (The address is mostly used to know if this is the last block in the heap.)
+* When I delete a Record in a block I swap it with the last one inside that block. (Except for the case that it is the only block)
+* If I delete all Records from a block, the block stays empty.
+
 HT.cpp:
 
 For HT_CreateIndex:
